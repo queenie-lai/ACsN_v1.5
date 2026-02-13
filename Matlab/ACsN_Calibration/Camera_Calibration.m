@@ -19,6 +19,7 @@
 % It may be convenient to store all calibration variables in one file 
 % but, when using the ACsN GUI, it is necessary to store offset and gain 
 % in different .mat files.
+clear all
 save_one_file  = 0; 
 
 %% Offset and Variance

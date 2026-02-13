@@ -7,14 +7,16 @@ load('offset');
 NA = 1.45;
 Lambda = .670;
 PxSize = .065;
+weight=0.75;
 
 %%
-raw = double(loadtiff('TIRF_01_10ms.tif'));
+% raw = double(loadtiff('TIRF_01_10ms.tif'));
 % raw = double(loadtiff('TIRF_01_05ms.tif'));
 % raw = double(loadtiff('TIRF_02_10ms.tif'));
-% raw = double(loadtiff('TIRF_02_05ms.tif'));
+ raw = double(loadtiff('TIRF_02_05ms.tif'));
 
-acsn  = ACSN(raw,NA,Lambda,PxSize,'Offset',offset,'Gain',gain); 
+
+acsn  = ACSN(raw,NA,Lambda,PxSize,'Offset',offset,'Gain',gain,'Weight',weight,'Mode','Fast'); 
 % The first time the runtime can be longer if the parallel pool is not already active
 
 %%
@@ -24,7 +26,7 @@ colormap(jet); axis off; axis image;
 title('TIRF image of HeLa microtubules - pixel fluctuation');
 
 figure; 
-imagesc(imfuse(raw(:,:,1),acsn(:,:,1),'montage'));
+imagesc(imfuse(raw(:,:,50),acsn(:,:,50),'montage'));
 colormap(blow); axis off; axis image;
 title('TIRF image of HeLa microtubules');
 
