@@ -83,57 +83,79 @@ else
     save('Variance','Variance');
 end
 
-%% Gain calibration
 
-% Here the code assumes that the image stacks for gain calibration have been saved
-% in different folders, one for each different illumination intensity and in
-% .tiff files that begin with 'Gain'. However, this can be changed by modifying
-% the argument of the dir function.
-    
-% N is the number of light levels used for gain calibration
-N = 10; 
 
-%row = size(Offset,1);
-%col = size(Offset,2);
-G = zeros(row,col,N);
-V = zeros(row,col,N);
-        
+%% modified
+%% Gain calibration (files in one folder)
+
+folder = uigetdir('', 'Select folder containing Gain_*.tiff files');
+if folder == 0
+    disp('User cancelled.');
+    return
+end
+
+files = dir(fullfile(folder, '*count*.ome.tiff'));
+
+% Extract unique illumination levels from filenames
+levels = [];
+for k = 1:length(files)
+    fname = files(k).name;
+    token = regexp(fname, '(\d+)count', 'tokens');
+    if ~isempty(token)
+        levels(end+1) = str2double(token{1}{1});
+    end
+end
+unique_levels = unique(levels);
+
+N = numel(unique_levels);
+row = size(Offset,1);
+col = size(Offset,2);
+G = zeros(row, col, N);
+V = zeros(row, col, N);
+
+%% Loop through each illumination level
 for i = 1:N
-    [file,path] = uigetfile('*.tif*');
-    if isequal(file,0)
-        disp('User selected Cancel');
-        return
-    else
-        D = dir([path, file(1:4), '*.tif*']);
-        L = length(D);
-        t = 0;
-        for k = 1:L
-            im = double(loadtiff(fullfile(path,D(k).name)));
-            for j = 1:size(im,3)
-                t = t + 1;
-                G(:,:,i) = ((t-1)/t).*G(:,:,i) + im(:,:,j)./t; 
-                V(:,:,i) = ((t-1)/t).*V(:,:,i) + ((im(:,:,j)-G(:,:,i)).^2)./(t-1); 
+    level = unique_levels(i);
+    disp(['Processing illumination: ', num2str(level), ' counts']);
+
+    % Get all files matching this level (e.g. Gain_100count_*.tif)
+    pattern = sprintf('%dcount*.tiff', level);
+    D = dir(fullfile(folder, pattern));
+
+    t = 0;
+    for k = 1:length(D)
+        fname = fullfile(folder, D(k).name);
+        disp(['Loading ', fname]);
+        im = double(loadtiff(fname));
+
+        for j = 1:size(im,3)
+            frame = im(:,:,j);
+            t = t + 1;
+
+            % Compute mean
+            G(:,:,i) = ((t-1)/t).*G(:,:,i) + frame./t;
+
+            % Compute variance (online formula)
+            if t > 1
+                V(:,:,i) = ((t-1)/t).*V(:,:,i) + ((frame - G(:,:,i)).^2)/(t-1);
             end
         end
+        
     end
 end
 
-%row = size(G,1);
-%col = size(G,2);
-Gain = zeros(row,col);
+% Fit gain pixelwise
+Gain = zeros(row, col);
 
 for i = 1:row
     for j = 1:col
-        
-        A = (squeeze(V(i,j,:) - Variance(i,j)));
-        
-        B = (squeeze(G(i,j,:) - Offset(i,j)));
-        
-        Gain(i,j) = lsqminnorm(B,A);
-        
+        A = squeeze(V(i,j,:) - Variance(i,j));  % y = variance - offset variance
+        B = squeeze(G(i,j,:) - Offset(i,j));    % x = mean - offset
+        Gain(i,j) = lsqminnorm(B, A);
     end
 end
 
+% Save
 if save_one_file
     save('Camera_Calibration','Gain','-append');
 else
