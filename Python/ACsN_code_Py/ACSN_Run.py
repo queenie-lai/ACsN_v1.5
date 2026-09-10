@@ -57,11 +57,16 @@ from ACSN import ACSN
 from scipy.io import loadmat
 from matplotlib import pyplot as plt
 
-cmap = loadmat('D:/Jia Lab/ACsN/Python/Python Test Images/cmap.mat')['blow']
-gain = loadmat('D:/Jia Lab/ACsN/Python/Python Test Images/gain.mat')['gain']
-offset = loadmat('D:/Jia Lab/ACsN/Python/Python Test Images/offset.mat')['offset']
+# Resolve paths relative to the script directory
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(SCRIPT_DIR)
+test_images_dir = os.path.join(BASE_DIR, 'Python Test Images')
 
-I = io.imread('D:/Jia Lab/ACsN/Python/Python Test Images/TIRF_01_10ms.tif')
+cmap = loadmat(os.path.join(test_images_dir, 'cmap.mat'))['blow']
+gain = loadmat(os.path.join(test_images_dir, 'gain.mat'))['gain']
+offset = loadmat(os.path.join(test_images_dir, 'offset.mat'))['offset']
+
+I = io.imread(os.path.join(test_images_dir, 'TIRF_01_10ms.tif'))
 color = False
 
 I = I[0]
@@ -106,10 +111,12 @@ plt.show()
 
 img_save = np.transpose(img, (2, 0, 1)).copy()
 
-directory_img = "D:/Jia Lab/ACsN/Python/Python Image Results/"
+directory_img = os.path.join(BASE_DIR, "Python Image Results")
+os.makedirs(directory_img, exist_ok=True)
 
-io.imsave(directory_img + SaveFileName, img_save)
+io.imsave(os.path.join(directory_img, SaveFileName), img_save)
 
 # Save floating point matrix created from ACSN function - not transposed
-directory_arr = "D:/Jia Lab/ACsN/Python/Python Array Results/"
-pickle.dump(img, open( directory_arr + "floating_point_matrix_" + SaveFileName + ".pckl", "wb" ) )
+directory_arr = os.path.join(BASE_DIR, "Python Array Results")
+os.makedirs(directory_arr, exist_ok=True)
+pickle.dump(img, open(os.path.join(directory_arr, "floating_point_matrix_" + SaveFileName + ".pckl"), "wb") )
